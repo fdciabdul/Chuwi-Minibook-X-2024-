@@ -1,0 +1,180 @@
+﻿;
+; GoodixMocUsb.inf
+;
+
+[Version]
+Signature="$Windows NT$"
+Class=Biometric
+ClassGuid={53D29EF7-377C-4D14-864B-EB3A85769359}
+Provider=%ManufacturerName%
+CatalogFile=GoodixMocUsb.cat
+DriverVer = 09/01/2022,3.12344.0.460
+
+[Manufacturer]
+%ManufacturerName%=Standard,NTamd64
+
+[Standard.NTamd64]
+%DeviceName%=MyDevice_Install, USB\VID_27C6&PID_6092
+
+[SourceDisksFiles]
+GoodixMocWbdi.dll=1
+GoodixMocEngineAdapter.dll=1 ;             Vendor engine adapter
+GoodixMocSensorAdapter.dll=1 ;     
+GoodixMocStorageAdapter.dll=1 ;
+GoodixMocEngineAdapterNw.dll=1 ;           Vendor engine adapter
+GoodixMocSensorAdapterNw.dll=1 ;     
+GoodixMocStorageAdapterNw.dll=1 ;
+GoodixSessionService.exe=1
+
+[SourceDisksNames]
+1 = %DiskName%
+
+
+[MyDevice_Install.NT]
+CopyFiles=UMDriverCopy,WinBioEngineAdapterCopy,SvcCopyFiles
+Include=WINUSB.INF                      ; Import sections from WINUSB.INF
+Needs=WINUSB.NT                         ; Run the CopyFiles & AddReg directives for WinUsb.INF
+
+[MyDevice_Install.NT.hw]
+AddReg=usbinterface_AddReg
+AddReg=DriverPlugInAddReg, DatabaseAddReg, VsmDatabaseAddReg
+AddReg=SessionServiceAddReg
+
+[MyDevice_Install.NT.Services]
+AddService=WUDFRd,0x000001fa,WUDFRD_ServiceInstall  ; flag 0x2 sets this as the service for the device
+AddService=WinUsb,0x000001f8,WinUsb_ServiceInstall  ; this service is installed because its a filter.
+AddService=SessionSvc,0x00000800,SvcName_ServicceInstall ;
+
+[MyDevice_Install.NT.Wdf]
+UmdfDispatcher=WinUsb
+UmdfService=LnvFPR,usbinterface_Install
+UmdfServiceOrder=LnvFPR
+
+; direct i/o devices cannot run in default pool
+UmdfHostProcessSharing=ProcessSharingDisabled
+
+[usbinterface_Install]
+UmdfLibraryVersion=2.15.0 
+ServiceBinary=%12%\UMDF\GoodixMocWbdi.dll
+
+[usbinterface_AddReg]
+HKR,,"DeviceCharacteristics",0x10001,0x0100     ; Use same security checks on relative opens
+HKR,,"Security",,"D:P(A;;GA;;;BA)(A;;GA;;;SY)"  ; Allow generic-all access to Built-in administrators and Local system
+HKR,,"LowerFilters",0x00010008,"WinUsb" ; FLG_ADDREG_TYPE_MULTI_SZ | FLG_ADDREG_APPEND
+HKR,,"WinUsbPowerPolicyOwnershipDisabled",0x00010001,1
+HKR,,"Exclusive",0x10001,1
+HKR,,"SystemWakeEnabled",0x00010001,1
+HKR,,"DeviceIdleEnabled",0x00010001,1
+HKR,,"UserSetDeviceIdleEnabled",0x00010001,1
+HKR,,"DefaultIdleState",0x00010001,1
+HKR,,"DefaultIdleTimeout",0x00010001,5000
+HKR,"WDF","WdfDirectedPowerTransitionEnable",0x00010001,1
+
+[DriverPlugInAddReg]
+HKR,WinBio\Configurations,DefaultConfiguration,,"0"
+HKR,WinBio\Configurations,VirtualSecureConfiguration,0x00010001,1
+HKR,WinBio\Configurations\0,SensorMode,0x10001,2                                  ; Basic - 1, Advanced - 2
+HKR,WinBio\Configurations\0,SystemSensor,0x10001,1                                ; UAC/Winlogon - 1
+HKR,WinBio\Configurations\0,SensorAdapterBinary,,"GoodixMocSensorAdapterNw.dll"        ; Vendor sensor
+HKR,WinBio\Configurations\0,EngineAdapterBinary,,"GoodixMocEngineAdapterNw.dll"        ; Vendor engine
+HKR,WinBio\Configurations\0,StorageAdapterBinary,,"GoodixMocStorageAdapterNw.dll"      ; Vendor storage
+HKR,WinBio\Configurations\0,DatabaseId,,"74B2E1C4-B8A7-4B34-87B1-7388121B106C"    ; Unique database GUID
+
+HKR,WinBio\Configurations\1,SensorMode,0x10001,2                                  ; Basic - 1, Advanced - 2 
+HKR,WinBio\Configurations\1,SystemSensor,0x10001,1                                ; UAC/Winlogon - 1
+HKR,WinBio\Configurations\1,VirtualSecureMode,0x10001,1                           ; VMM enable
+HKR,WinBio\Configurations\1,SensorAdapterBinary,,"GoodixMocSensorAdapter.dll"        ; vendor sensor
+HKR,WinBio\Configurations\1,EngineAdapterBinary,,"GoodixMocEngineAdapter.dll"        ; Vendor engine
+HKR,WinBio\Configurations\1,StorageAdapterBinary,,"GoodixMocStorageAdapter.dll"      ; Vendor storage adapter
+
+HKR,WinBio\Configurations\1,VsmSensorAdapterBinary,,"WinBioVsmNullAdapter"        ; Windows built-in sensor adapter
+HKR,WinBio\Configurations\1,VsmEngineAdapterBinary,,"WinBioVsmNullAdapter"        ; vensor vsm engin adapter
+HKR,WinBio\Configurations\1,VsmStorageAdapterBinary,,"WinBioVsmNullAdapter"       ; Windows built-in storage adapter
+HKR,WinBio\Configurations\1,DatabaseId,,"c6c03801-e229-419b-a7e9-4d5370992800"    ; Unique database GUID
+
+[DatabaseAddReg]
+HKLM,System\CurrentControlSet\Services\WbioSrvc\Databases\{74B2E1C4-B8A7-4B34-87B1-7388121B106C},BiometricType,0x00010001,0x00000008
+HKLM,System\CurrentControlSet\Services\WbioSrvc\Databases\{74B2E1C4-B8A7-4B34-87B1-7388121B106C},Attributes,0x00010001,0x00000001
+HKLM,System\CurrentControlSet\Services\WbioSrvc\Databases\{74B2E1C4-B8A7-4B34-87B1-7388121B106C},Format,,"A2697CB9-B200-4BF5-9F40-3A8F699B4BD6"
+HKLM,System\CurrentControlSet\Services\WbioSrvc\Databases\{74B2E1C4-B8A7-4B34-87B1-7388121B106C},InitialSize,0x00010001,0x00000020
+HKLM,System\CurrentControlSet\Services\WbioSrvc\Databases\{74B2E1C4-B8A7-4B34-87B1-7388121B106C},AutoCreate,0x00010001,0x00000001
+HKLM,System\CurrentControlSet\Services\WbioSrvc\Databases\{74B2E1C4-B8A7-4B34-87B1-7388121B106C},AutoName,0x00010001,0x00000001
+HKLM,System\CurrentControlSet\Services\WbioSrvc\Databases\{74B2E1C4-B8A7-4B34-87B1-7388121B106C},FilePath,,""
+HKLM,System\CurrentControlSet\Services\WbioSrvc\Databases\{74B2E1C4-B8A7-4B34-87B1-7388121B106C},ConnectionString,,""
+
+[VsmDatabaseAddReg]
+HKLM,System\CurrentControlSet\Services\WbioSrvc\Databases\{c6c03801-e229-419b-a7e9-4d5370992800},BiometricType,0x00010001,0x00000008
+HKLM,System\CurrentControlSet\Services\WbioSrvc\Databases\{c6c03801-e229-419b-a7e9-4d5370992800},Attributes,0x00010001,0x00000001
+HKLM,System\CurrentControlSet\Services\WbioSrvc\Databases\{c6c03801-e229-419b-a7e9-4d5370992800},Format,,"3B2F61F2-D8DF-40AF-B5A0-DDC0A6BCF589"
+HKLM,System\CurrentControlSet\Services\WbioSrvc\Databases\{c6c03801-e229-419b-a7e9-4d5370992800},InitialSize,0x00010001,0x00000020
+HKLM,System\CurrentControlSet\Services\WbioSrvc\Databases\{c6c03801-e229-419b-a7e9-4d5370992800},AutoCreate,0x00010001,0x00000001
+HKLM,System\CurrentControlSet\Services\WbioSrvc\Databases\{c6c03801-e229-419b-a7e9-4d5370992800},AutoName,0x00010001,0x00000001
+HKLM,System\CurrentControlSet\Services\WbioSrvc\Databases\{c6c03801-e229-419b-a7e9-4d5370992800},FilePath,,""
+HKLM,System\CurrentControlSet\Services\WbioSrvc\Databases\{c6c03801-e229-419b-a7e9-4d5370992800},ConnectionString,,""
+
+[SessionServiceAddReg]
+HKLM,System\CurrentControlSet\Control\Goodix,SessionDetection,0x10001,0
+
+[WUDFRD_ServiceInstall]
+DisplayName = %WudfRdDisplayName%
+ServiceType = 1
+StartType = 3
+ErrorControl = 1
+ServiceBinary = %12%\WUDFRd.sys
+LoadOrderGroup = Base
+
+[SvcName_ServicceInstall]
+DisplayName = %SessionDetection%
+ServiceType = 0x00000010
+StartType = 2
+ErrorControl = 1
+ServiceBinary = %12%\GoodixSessionService.exe
+
+[WinUsb_ServiceInstall]
+DisplayName = %WinUsb_SvcDesc%
+ServiceType = 1
+StartType = 3
+ErrorControl = 1
+ServiceBinary = %12%\WinUSB.sys
+
+[DestinationDirs]
+UMDriverCopy=12,UMDF ; copy to drivers\umdf
+WinBioEngineAdapterCopy=11,WinBioPlugins ; copy to \Windows\System32\WinBioPlugins
+SvcCopyFiles=12
+
+[UMDriverCopy]
+GoodixMocWbdi.dll,,,0x00004000
+
+[WinBioEngineAdapterCopy]
+GoodixMocEngineAdapter.dll,,,0x00004000
+GoodixMocSensorAdapter.dll,,,0x00004000
+GoodixMocStorageAdapter.dll,,,0x00004000
+GoodixMocEngineAdapterNw.dll,,,0x00004000
+GoodixMocSensorAdapterNw.dll,,,0x00004000
+GoodixMocStorageAdapterNw.dll,,,0x00004000
+
+[SvcCopyFiles]
+GoodixSessionService.exe,,,0x00004000
+
+[SignatureAttributes]
+GoodixMocWbdi.dll = SignatureAttributes.WindowsHello
+GoodixMocEngineAdapter.dll  = SignatureAttributes.WindowsHello
+GoodixMocSensorAdapter.dll  = SignatureAttributes.WindowsHello
+GoodixMocStorageAdapter.dll = SignatureAttributes.WindowsHello
+GoodixMocEngineAdapterNw.dll  = SignatureAttributes.WindowsHello
+GoodixMocSensorAdapterNw.dll  = SignatureAttributes.WindowsHello
+GoodixMocStorageAdapterNw.dll = SignatureAttributes.WindowsHello
+
+[SignatureAttributes.WindowsHello]
+WindowsHello = true
+
+; =================== Generic ==================================
+
+[Strings]
+ManufacturerName="Goodix" 
+ClassName="Biometric Devices"
+DiskName = "usbinterface Installation Disk"
+SessionDetection = "Session Detection"
+WudfRdDisplayName="Windows Driver Foundation - User-mode Driver Framework Reflector"
+WinUsb_SvcDesc="WinUSB Driver"
+DeviceName="Goodix MOC Fingerprint"

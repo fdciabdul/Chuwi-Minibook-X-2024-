@@ -1,0 +1,95 @@
+/*++
+;
+;Copyright (c) Vishay Intertechnology, Inc.  All rights reserved.
+;
+;Module Name:
+;    vshyals.INF
+;
+;Abstract:
+;    INF file for installing Vishay ambient light sensor driver
+;
+;--*/
+
+[Version]
+Signature   = "$WINDOWS NT$"
+Class       = Sensor
+ClassGuid   = {5175D334-C371-4806-B3BA-71FD53C9258D}
+Provider    = %VISHAY%
+CatalogFile = vshyals.cat
+DriverVer = 08/05/2022,2.0.10.0
+PnpLockDown = 1
+
+[SourceDisksNames]
+1 = %MediaDescription%,,,""
+
+[SourceDisksFiles]
+vshyals.dll   = 1,,
+
+[Manufacturer]
+%VISHAY% = vshyals_Device, NTamd64
+
+
+;*******************************
+; vshyals Install Section
+;*******************************
+
+[vshyals_Device.NTamd64]
+; DisplayName       Section       DeviceId
+; -----------       -------       --------
+%vshyals_DevDesc% = vshyals_Inst, ACPI\VSHY6030
+%vshyals_DevDesc% = vshyals_Inst, ACPI\VSHY7700
+%vshyals_DevDesc% = vshyals_Inst, ACPI\CPLM3218
+
+[vshyals_Inst.NT]
+CopyFiles = vshyalsDriverCopy
+
+[vshyals_Inst.NT.hw]
+AddReg = vshyalsAddReg
+
+[vshyalsAddReg]
+HKR,"WDF","WdfDirectedPowerTransitionEnable",0x00010001,1
+
+[vshyalsDriverCopy]
+vshyals.dll
+
+[DestinationDirs]
+vshyalsDriverCopy = 12,UMDF
+
+;-------------- Service installation
+
+[vshyals_Inst.NT.Services]
+AddService = WUDFRd,0x000001fa,WUDFRD_ServiceInstall
+
+[WUDFRD_ServiceInstall]
+DisplayName   = %WudfRdDisplayName%
+ServiceType   = %SERVICE_KERNEL_DRIVER%
+StartType     = %SERVICE_DEMAND_START%
+ErrorControl  = %SERVICE_ERROR_NORMAL%
+ServiceBinary = %12%\WUDFRd.sys
+
+;-------------- WDF specific section
+
+[vshyals_Inst.NT.Wdf]
+UmdfService              = vshyals, vshyals_Install
+UmdfServiceOrder         = vshyals
+UmdfDirectHardwareAccess = AllowDirectHardwareAccess
+UmdfFileObjectPolicy     = AllowNullAndUnknownFileObjects
+UmdfFsContextUsePolicy   = CannotUseFsContexts
+
+[vshyals_Install]
+UmdfLibraryVersion       = 2.15.0
+ServiceBinary            = %12%\UMDF\vshyals.dll
+UmdfExtensions           = SensorsCx0102
+
+[Strings]
+;Localizable Strings
+MediaDescription         = "Vishay Ambient Light Sensor Driver Installation Media"
+VISHAY                   = "Vishay Intertechnology, Inc."
+vshyals_DevDesc          = "Vishay Ambient Light Sensor"
+WudfRdDisplayName        = "Windows Driver Foundation - User-mode Driver Framework Reflector"
+
+;Non-Localizable Strings
+SERVICE_KERNEL_DRIVER    = 1
+SERVICE_DEMAND_START     = 3
+SERVICE_ERROR_NORMAL     = 1
+

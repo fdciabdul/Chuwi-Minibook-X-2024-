@@ -1,0 +1,97 @@
+/*++
+;
+;Copyright (c) Microsoft Corporation.  All rights reserved.
+;
+;Module Name:
+;    mxc6655Angle.INF
+;
+;Abstract:
+;    INF file for installing the Sensors Combo Driver
+;
+;Installation Notes:
+;    Using Devcon: Type "devcon install mxc6655Angle.inf ACPI\mda6655" to install
+;
+;--*/
+[Version]
+Signature   = "$WINDOWS NT$"
+Class       = Sensor
+ClassGuid   = {5175D334-C371-4806-B3BA-71FD53C9258D}
+Provider    = %PROVIDER%
+CatalogFile = mxc6655Angle.cat
+DriverVer = 06/22/2022,9.47.23.632
+
+[SourceDisksNames]
+1 = %MediaDescription%,,,""
+
+[SourceDisksFiles]
+mxc6655Angle.dll = 1,,
+
+[Manufacturer]
+%PROVIDER% = mxc6655Angle_Device, NTamd64
+
+;*******************************
+; Combo Driver Install Section
+;*******************************
+
+[mxc6655Angle_Device.NTamd64]
+; DisplayName       Section          DeviceId
+; -----------       -------          --------
+%mxc6655Angle_DevDesc% = mxc6655Angle_Inst, ACPI\mda6655
+
+[mxc6655Angle_Inst.NT]
+CopyFiles = mxc6655AngleCopy
+
+[mxc6655Angle_Inst.NT.hw]
+AddReg=mxc6655Angle_Inst.addreg
+
+[mxc6655Angle_Inst.addreg]
+HKLM,SOFTWARE\Microsoft\Windows NT\CurrentVersion\WUDF\Services\mxc6655Angle\Parameters,PRE_TEMP0,0x00010001,0x00000000
+HKLM,SOFTWARE\Microsoft\Windows NT\CurrentVersion\WUDF\Services\mxc6655Angle\Parameters,AOZ0,0x00010001,0x00000000
+HKLM,SOFTWARE\Microsoft\Windows NT\CurrentVersion\WUDF\Services\mxc6655Angle\Parameters,PRE_TEMP1,0x00010001,0x00000000
+HKLM,SOFTWARE\Microsoft\Windows NT\CurrentVersion\WUDF\Services\mxc6655Angle\Parameters,AOZ1,0x00010001,0x00000000
+;HKR,"WDF","WdfDirectedPowerTransitionEnable",0x00010001,1
+
+[mxc6655AngleCopy]
+mxc6655Angle.dll
+
+[DestinationDirs]
+;12 == Windows\System32\Drivers\UMDF
+DefaultDestDir = 12,UMDF
+
+;-------------- Service installation
+[mxc6655Angle_Inst.NT.Services]
+AddService = WUDFRd,0x000001fa,WUDFRD_ServiceInstall
+
+[WUDFRD_ServiceInstall]
+DisplayName   = %WudfRdDisplayName%
+ServiceType   = %SERVICE_KERNEL_DRIVER%
+StartType     = %SERVICE_DEMAND_START%
+ErrorControl  = %SERVICE_ERROR_NORMAL%
+ServiceBinary = %12%\WUDFRd.sys
+
+;-------------- WDF specific section
+
+[mxc6655Angle_Inst.NT.Wdf]
+UmdfService              = mxc6655Angle, mxc6655Angle_Install
+UmdfServiceOrder         = mxc6655Angle
+UmdfDirectHardwareAccess = AllowDirectHardwareAccess
+UmdfFileObjectPolicy     = AllowNullAndUnknownFileObjects
+UmdfFsContextUsePolicy   = CannotUseFsContexts
+UmdfImpersonationLevel   = Impersonation
+
+[mxc6655Angle_Install]
+UmdfLibraryVersion       = 2.15.0
+ServiceBinary            = %12%\UMDF\mxc6655Angle.dll
+UmdfExtensions           = SensorsCx0102
+
+[Strings]
+;Localizable Strings
+MediaDescription           = "MEMSIC Dual Accelerometer Driver"
+PROVIDER                   = "MEMSIC Inc"
+mxc6655Angle_DevDesc = "MEMSIC Dual Accelerometer Driver"
+WudfRdDisplayName          = "Windows Driver Foundation - User-mode Driver Framework Reflector"
+
+;Non-Localizable Strings
+SERVICE_KERNEL_DRIVER    = 1
+SERVICE_DEMAND_START     = 3
+SERVICE_ERROR_NORMAL     = 1
